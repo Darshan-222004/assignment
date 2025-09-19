@@ -1,5 +1,8 @@
 ASSIGNMENT
 
+Objective
+Create a minimal single‑page demo where a user uploads one recorded‑steps JSON and gets step‑by‑step guidance via an overlay. When selectors are missing, use an LLM (or the provided stub) to map natural‑language targets to the correct elements so the flow completes end‑to‑end.
+
 What you ship in the repo
 /public
     task.html               # ONE page with all elements
