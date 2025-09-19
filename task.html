@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Single Page — Account Setup</title>
+  <style>
+    body{font-family:system-ui;margin:2rem;max-width:760px}
+    form{display:grid;gap:12px;width:520px}
+    label{font-weight:600}
+    input,select,button{padding:8px}
+    #success{display:none;margin-top:16px;padding:10px;border:1px solid #2e7d32;background:#e8f5e9}
+  </style>
+</head>
+<body>
+  <h1>Account Setup</h1>
+  <form id="acct-form">
+    <label for="full_name">Full name</label>
+    <input id="full_name" name="full_name" type="text" placeholder="John Doe" />
+
+    <label for="contact_email">Email</label>
+    <input id="contact_email" name="email" type="email" placeholder="john@example.com" />
+
+    <label for="phone">Mobile number</label>
+    <input id="phone" name="phone" type="tel" placeholder="+91 98765 43210" />
+
+    <label for="role">Role</label>
+    <select id="role" name="role">
+      <option>User</option>
+      <option>Admin</option>
+      <option>Viewer</option>
+    </select>
+
+    <label for="country">Country</label>
+    <select id="country" name="country">
+      <option>India</option>
+      <option>USA</option>
+      <option>UK</option>
+    </select>
+
+    <fieldset>
+      <legend>Account type</legend>
+      <label><input type="radio" name="acctType" value="employee"> Employee</label>
+      <label><input type="radio" name="acctType" value="contractor"> Contractor</label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Preferred contact</legend>
+      <label><input type="radio" name="contactPref" value="email"> Email</label>
+      <label><input type="radio" name="contactPref" value="phone"> Phone</label>
+    </fieldset>
+
+    <label><input id="accept_tos" type="checkbox" /> I agree to Terms</label>
+    <label><input id="newsletter" type="checkbox" /> Subscribe to updates</label>
+
+    <button id="create_account" type="button">Create Account</button>
+  </form>
+
+  <div id="success">Success! Account created.</div>
+
+  <script>
+    document.getElementById('create_account').addEventListener('click', () => {
+      setTimeout(() => {
+        document.getElementById('success').style.display = 'block';
+      }, 400);
+    });
+  </script>
+</body>
+</html>
