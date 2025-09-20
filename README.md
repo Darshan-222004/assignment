@@ -18,7 +18,9 @@ Candidate instructions
 Keep it 1–2 hours. Clarity beats features. Console‑log each step and your resolver’s decision.
 
 How to run
+
     npx http-server ./public -p 8080 --cors
+    
     # open http://localhost:8080/task.html
 
 Acceptance
