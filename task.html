@@ -1,41 +1,47 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Single Page — Account Setup</title>
+  <meta charset="utf-8"/>
+  <title>Guided Overlay Demo</title>
   <style>
-    body{font-family:system-ui;margin:2rem;max-width:760px}
-    form{display:grid;gap:12px;width:520px}
-    label{font-weight:600}
-    input,select,button{padding:8px}
-    #success{display:none;margin-top:16px;padding:10px;border:1px solid #2e7d32;background:#e8f5e9}
+    body { font-family: system-ui, sans-serif; margin: 2rem; }
+    form { display: grid; gap: 12px; max-width: 600px; }
+
+    label { font-weight: 600; }
+    input, select, button { padding: 8px; }
+
+    #success { display:none; margin-top:16px; padding:10px; border:1px solid #2e7d32; background:#e8f5e9; }
+
+    /* Overlay */
+    #overlay {
+      position: fixed; top: 20px; right: 20px; z-index: 1000;
+      background: rgba(0,0,0,0.85); color: #fff; padding: 12px; border-radius: 8px;
+      display: none; max-width: 280px;
+    }
+    #overlay button { margin: 4px; }
+    .highlight { outline: 3px solid orange; }
   </style>
 </head>
 <body>
   <h1>Account Setup</h1>
+  <input type="file" id="upload" />
+
   <form id="acct-form">
-    <label for="full_name">Full name</label>
-    <input id="full_name" name="full_name" type="text" placeholder="John Doe" />
+    <label>Full name <input id="full_name" placeholder="John Doe"></label>
+    <label>Email <input id="contact_email" type="email" placeholder="john@example.com"></label>
+    <label>Mobile <input id="phone" type="tel" placeholder="+91 98765 43210"></label>
 
-    <label for="contact_email">Email</label>
-    <input id="contact_email" name="email" type="email" placeholder="john@example.com" />
+    <label>Role
+      <select id="role">
+        <option>User</option><option>Admin</option><option>Viewer</option>
+      </select>
+    </label>
 
-    <label for="phone">Mobile number</label>
-    <input id="phone" name="phone" type="tel" placeholder="+91 98765 43210" />
-
-    <label for="role">Role</label>
-    <select id="role" name="role">
-      <option>User</option>
-      <option>Admin</option>
-      <option>Viewer</option>
-    </select>
-
-    <label for="country">Country</label>
-    <select id="country" name="country">
-      <option>India</option>
-      <option>USA</option>
-      <option>UK</option>
-    </select>
+    <label>Country
+      <select id="country">
+        <option>India</option><option>USA</option><option>UK</option>
+      </select>
+    </label>
 
     <fieldset>
       <legend>Account type</legend>
@@ -49,19 +55,97 @@
       <label><input type="radio" name="contactPref" value="phone"> Phone</label>
     </fieldset>
 
-    <label><input id="accept_tos" type="checkbox" /> I agree to Terms</label>
-    <label><input id="newsletter" type="checkbox" /> Subscribe to updates</label>
+    <label><input id="accept" type="checkbox"> Agree to Terms</label>
+    <label><input id="newsletter" type="checkbox"> Subscribe to updates</label>
 
     <button id="create_account" type="button">Create Account</button>
   </form>
 
   <div id="success">Success! Account created.</div>
 
+  <!-- Overlay -->
+  <div id="overlay">
+    <div id="stepText"></div>
+    <div>
+      <button id="prev">Prev</button>
+      <button id="next">Next</button>
+      <button id="reset">Reset</button>
+    </div>
+  </div>
+
   <script>
+    let steps = [], current = 0;
+
+    // Upload handler
+    document.getElementById('upload').addEventListener('change', async e => {
+      const file = e.target.files[0];
+      steps = JSON.parse(await file.text()).steps;
+      current = 0;
+      showOverlay();
+      runStep();
+    });
+
+    function showOverlay() {
+      document.getElementById('overlay').style.display = 'block';
+    }
+
+    function runStep() {
+      clearHighlights();
+      if (current < 0 || current >= steps.length) return;
+      const step = steps[current];
+      document.getElementById('stepText').textContent = `Step ${current+1}/${steps.length}: ${step.action} → ${step.target_text}`;
+      resolveTarget(step);
+    }
+
+    function resolveTarget(step) {
+      let el = null;
+      if (step.selector) {
+        el = document.querySelector(step.selector);
+      } else {
+        el = stubResolver(step.target_text); // fallback
+      }
+      if (el) {
+        el.classList.add("highlight");
+        if (step.action === "type") el.value = step.value;
+        if (step.action === "select") el.value = step.value;
+        if (step.action === "radio") {
+          const radio = [...document.querySelectorAll(`input[type=radio][value='${step.value.toLowerCase()}']`)][0];
+          if (radio) radio.checked = true;
+        }
+        if (step.action === "check") el.checked = true;
+        if (step.action === "click") el.click();
+        if (step.action === "assert") console.log("Assert:", step.assert);
+      }
+    }
+
+    function stubResolver(text) {
+      text = text.toLowerCase();
+      if (text.includes("full name")) return document.getElementById("full_name");
+      if (text.includes("email")) return document.getElementById("contact_email");
+      if (text.includes("mobile")) return document.getElementById("phone");
+      if (text.includes("role")) return document.getElementById("role");
+      if (text.includes("country")) return document.getElementById("country");
+      if (text.includes("account type")) return document.querySelector("input[name=acctType]");
+      if (text.includes("preferred contact")) return document.querySelector("input[name=contactPref]");
+      if (text.includes("terms")) return document.getElementById("accept");
+      if (text.includes("newsletter")) return document.getElementById("newsletter");
+      if (text.includes("create account")) return document.getElementById("create_account");
+      if (text.includes("success")) return document.getElementById("success");
+      return null;
+    }
+
+    function clearHighlights() {
+      document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+    }
+
+    // Overlay buttons
+    document.getElementById("prev").onclick = () => { current--; runStep(); };
+    document.getElementById("next").onclick = () => { current++; runStep(); };
+    document.getElementById("reset").onclick = () => { current=0; runStep(); };
+
+    // Final button action
     document.getElementById('create_account').addEventListener('click', () => {
-      setTimeout(() => {
-        document.getElementById('success').style.display = 'block';
-      }, 400);
+      setTimeout(() => document.getElementById('success').style.display = 'block', 400);
     });
   </script>
 </body>
