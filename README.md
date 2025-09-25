@@ -1,6 +1,8 @@
 # Guided Overlay Demo – Assignment
 
-This is a single-page demo where a user can upload a JSON file (`steps-recorded.json`) and see step-by-step guidance overlaid on the form. The overlay shows the current step, highlights the correct element, and lets you move through the flow with Next/Prev/Reset buttons.  
+## Overview
+This is a minimal single-page demo where a user uploads a recorded-steps JSON and receives step-by-step guidance via an overlay.  
+When selectors are missing, the flow resolves them using an LLM stub that maps natural-language targets to DOM elements (labels, placeholders, innerText, options).  
 
 ## How to Run
 ```bash

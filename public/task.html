@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Guided Overlay Demo</title>
+ <style>
+/* General page */
+body {
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background: #fdf6e3; /* beige background */
+  margin: 2rem;
+  color: #222;
+}
+
+/* Form card */
+form {
+  background: white;
+  padding: 28px;
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  max-width: 650px;
+}
+
+h1 {
+  margin-bottom: 24px;
+  font-size: 28px;
+  font-weight: 700;
+  color: #111;
+}
+
+/* Inputs & selects */
+input, select {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #bbb;
+  width: 100%;
+  margin-top: 6px;
+  margin-bottom: 16px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus, select:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 6px #fcd34d;
+  outline: none;
+}
+
+/* Main button */
+button {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  color: white;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 16px;
+  transition: all 0.25s ease-in-out;
+}
+
+button:hover {
+  background: linear-gradient(135deg, #1e40af, #2563eb);
+  transform: scale(1.07);
+  box-shadow: 0 6px 16px rgba(37,99,235,0.5);
+}
+
+/* Success message */
+#success {
+  display: none;
+  margin-top: 18px;
+  padding: 12px;
+  border: 1px solid #2e7d32;
+  background: #d1fae5;
+  border-radius: 8px;
+  font-weight: 600;
+  color: #065f46;
+}
+
+/* Overlay panel */
+#overlay {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 2000;
+  background: #111827;
+  color: white;
+  padding: 20px;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+  display: none;
+
+  width: 340px;       /* fixed width */
+  min-height: 130px;  /* fixed height for consistency */
+}
+
+#stepText {
+  margin-bottom: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  word-wrap: break-word; /* wrap long text */
+  white-space: normal;
+}
+
+/* Overlay controls */
+#overlay .controls {
+  display: flex;
+  gap: 8px;
+}
+
+#overlay button {
+  flex: 1;
+  font-size: 14px;
+  padding: 10px 0;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+}
+
+#overlay button:hover {
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
+  transform: scale(1.1);
+  box-shadow: 0 0 12px #60a5fa;
+}
+
+/* Highlight effect */
+.highlight {
+  outline: 3px solid #f59e0b;
+  background: rgba(255, 243, 191, 0.5);
+  border-radius: 6px;
+  transition: all 0.25s ease-in-out;
+}
+</style>
+
+</head>
+<body>
+  <h1>Account Setup</h1>
+  <!-- Candidate instruction 1: Upload JSON -->
+  <input type="file" id="upload" />
+
+  <form id="acct-form">
+    <label>Full name <input id="full_name" placeholder="John Doe"></label>
+    <label>Email <input id="contact_email" type="email" placeholder="john@example.com"></label>
+    <label>Mobile <input id="phone" type="tel" placeholder="+91 98765 43210"></label>
+
+    <label>Role
+      <select id="role">
+        <option>User</option><option>Admin</option><option>Viewer</option>
+      </select>
+    </label>
+
+    <label>Country
+      <select id="country">
+        <option>India</option><option>USA</option><option>UK</option>
+      </select>
+    </label>
+
+    <fieldset>
+      <legend>Account type</legend>
+      <label><input type="radio" name="acctType" value="employee"> Employee</label>
+      <label><input type="radio" name="acctType" value="contractor"> Contractor</label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Preferred contact</legend>
+      <label><input type="radio" name="contactPref" value="email"> Email</label>
+      <label><input type="radio" name="contactPref" value="phone"> Phone</label>
+    </fieldset>
+
+    <label><input id="accept" type="checkbox"> Agree to Terms</label>
+    <label><input id="newsletter" type="checkbox"> Subscribe to updates</label>
+
+    <button id="create_account" type="button">Create Account</button>
+  </form>
+
+  <div id="success">Success! Account created.</div>
+
+  <!-- Candidate instruction 2: Guide overlay -->
+  <div id="overlay">
+    <div id="stepText">Step 0/0: Load a recording to begin</div>
+    <div class="controls">
+      <button id="start">Start</button>
+      <button id="prev">Prev</button>
+      <button id="next">Next</button>
+      <button id="reset">Reset</button>
+    </div>
+  </div>
+
+  <script>
+    let steps = [], current = 0;
+
+    // Upload handler
+    document.getElementById('upload').addEventListener('change', async e => {
+      const file = e.target.files[0];
+      steps = JSON.parse(await file.text()).steps;
+      console.log("Loaded steps:", steps);
+      current = 0;
+      showOverlay();
+      updateOverlay("Load complete. Click Start to begin.");
+    });
+
+    function showOverlay() {
+      document.getElementById('overlay').style.display = 'block';
+    }
+
+    function updateOverlay(msg) {
+      document.getElementById('stepText').textContent = msg;
+    }
+
+    // Candidate instruction 3: Replay actions
+    function runStep() {
+      clearHighlights();
+      if (current < 0 || current >= steps.length) return;
+      const step = steps[current];
+      console.log(`Executing Step ${step.id}: ${step.action} → ${step.target_text}`);
+      resolveTarget(step);
+      updateOverlay(`Step ${current+1}/${steps.length}: ${step.target_text}`);
+    }
+
+    // Candidate instruction 4: LLM/stub mapping
+    function resolveTarget(step) {
+      let el = null;
+      if (step.selector) {
+        el = document.querySelector(step.selector);
+        console.log("Using provided selector:", step.selector);
+      } else {
+        el = stubResolver(step.target_text); // stub simulating LLM
+        console.log("Resolved via stub →", el ? el.id : "not found");
+      }
+
+      if (el) {
+        el.classList.add("highlight");
+        el.scrollIntoView({ behavior: "smooth", block: "center" }); // auto scroll with overlay
+
+        switch (step.action) {
+          case "type": el.value = step.value; break;
+          case "select": el.value = step.value; break;
+          case "radio":
+            const radio = [...document.querySelectorAll("input[type=radio]")].find(r => r.value.toLowerCase() === step.value.toLowerCase());
+            if (radio) radio.checked = true;
+            break;
+          case "check": el.checked = true; break;
+          case "click": el.click(); break;
+          case "assert":
+            if (step.assert?.type === "textContains") {
+              console.log("Assertion:", el.textContent.includes(step.assert.value) ? "PASS" : "FAIL");
+            }
+            break;
+          case "navigate": console.log("Navigate to", step.target_text); break;
+        }
+      }
+    }
+
+    // Stub resolver simulating LLM response
+    function stubResolver(text) {
+      text = text.toLowerCase();
+      if (text.includes("full name")) return document.getElementById("full_name");
+      if (text.includes("email")) return document.getElementById("contact_email");
+      if (text.includes("mobile")) return document.getElementById("phone");
+      if (text.includes("role")) return document.getElementById("role");
+      if (text.includes("country")) return document.getElementById("country");
+      if (text.includes("account type")) return document.querySelector("input[name=acctType]");
+      if (text.includes("preferred contact")) return document.querySelector("input[name=contactPref]");
+      if (text.includes("terms")) return document.getElementById("accept");
+      if (text.includes("newsletter")) return document.getElementById("newsletter");
+      if (text.includes("create account")) return document.getElementById("create_account");
+      if (text.includes("success")) return document.getElementById("success");
+      return null;
+    }
+
+    function clearHighlights() {
+      document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+    }
+
+    // Overlay button handlers
+    document.getElementById("start").onclick = () => { current = 0; runStep(); };
+    document.getElementById("prev").onclick = () => { current--; runStep(); };
+    document.getElementById("next").onclick = () => { current++; runStep(); };
+    document.getElementById("reset").onclick = () => { current = 0; updateOverlay("Reset. Click Start to begin."); };
+
+    // Final button action
+    document.getElementById('create_account').addEventListener('click', () => {
+      setTimeout(() => document.getElementById('success').style.display = 'block', 400);
+    });
+  </script>
+</body>
+</html>
