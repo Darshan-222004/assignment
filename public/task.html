@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <title>Guided Overlay Demo</title>
- <style>
+  <style>
 /* General page */
 body {
   font-family: 'Segoe UI', Tahoma, sans-serif;
@@ -28,8 +28,9 @@ h1 {
   color: #111;
 }
 
-/* Inputs & selects */
-input, select {
+/* Inputs & selects (exclude radios/checkboxes) */
+input:not([type="radio"]):not([type="checkbox"]),
+select {
   padding: 12px;
   border-radius: 8px;
   border: 1px solid #bbb;
@@ -39,10 +40,28 @@ input, select {
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-input:focus, select:focus {
+input:not([type="radio"]):not([type="checkbox"]):focus,
+select:focus {
   border-color: #f59e0b;
   box-shadow: 0 0 6px #fcd34d;
   outline: none;
+}
+
+/* Radios & checkboxes */
+input[type="radio"],
+input[type="checkbox"] {
+  width: auto;        /* <-- prevents the long full-width bar */
+  margin: 0;
+  padding: 0;
+}
+
+/* Keep radios/checkboxes inline with their text */
+label:has(> input[type="radio"]),
+label:has(> input[type="checkbox"]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 /* Main button */
@@ -76,7 +95,7 @@ button:hover {
   color: #065f46;
 }
 
-/* Overlay panel */
+/* Overlay panel — fixed size, stable */
 #overlay {
   position: fixed;
   top: 20px;
@@ -89,23 +108,25 @@ button:hover {
   box-shadow: 0 6px 18px rgba(0,0,0,0.4);
   display: none;
 
-  width: 340px;       /* fixed width */
-  min-height: 130px;  /* fixed height for consistency */
+  width: 340px;        /* fixed width for stability */
+  min-height: 130px;   /* reserve space for text + buttons */
+  box-sizing: border-box;
 }
 
 #stepText {
   margin-bottom: 12px;
   font-size: 16px;
   font-weight: 700;
-  line-height: 1.4;
-  word-wrap: break-word; /* wrap long text */
+  line-height: 1.35;
+  word-wrap: break-word;
+  overflow-wrap: break-word; /* wrap long step titles instead of growing panel */
   white-space: normal;
 }
 
-/* Overlay controls */
 #overlay .controls {
   display: flex;
   gap: 8px;
+  align-items: stretch;
 }
 
 #overlay button {
@@ -114,6 +135,8 @@ button:hover {
   padding: 10px 0;
   border-radius: 8px;
   background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  white-space: nowrap;        /* don't wrap labels like "Next" */
+  will-change: transform;     /* avoid layout jitter on hover */
 }
 
 #overlay button:hover {
@@ -156,14 +179,14 @@ button:hover {
 
     <fieldset>
       <legend>Account type</legend>
-      <label><input type="radio" name="acctType" value="employee"> Employee</label>
-      <label><input type="radio" name="acctType" value="contractor"> Contractor</label>
+      <label><input type="radio" name="acctType" value="Employee"> Employee</label>
+      <label><input type="radio" name="acctType" value="Contractor"> Contractor</label>
     </fieldset>
 
     <fieldset>
       <legend>Preferred contact</legend>
-      <label><input type="radio" name="contactPref" value="email"> Email</label>
-      <label><input type="radio" name="contactPref" value="phone"> Phone</label>
+      <label><input type="radio" name="contactPref" value="Email"> Email</label>
+      <label><input type="radio" name="contactPref" value="Phone"> Phone</label>
     </fieldset>
 
     <label><input id="accept" type="checkbox"> Agree to Terms</label>
@@ -228,24 +251,54 @@ button:hover {
       }
 
       if (el) {
-        el.classList.add("highlight");
-        el.scrollIntoView({ behavior: "smooth", block: "center" }); // auto scroll with overlay
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
 
         switch (step.action) {
-          case "type": el.value = step.value; break;
-          case "select": el.value = step.value; break;
-          case "radio":
-            const radio = [...document.querySelectorAll("input[type=radio]")].find(r => r.value.toLowerCase() === step.value.toLowerCase());
-            if (radio) radio.checked = true;
+          case "type":
+            el.value = step.value;
             break;
-          case "check": el.checked = true; break;
-          case "click": el.click(); break;
+
+          case "select":
+            // normalize mismatches
+            if (step.value === "Administrator") step.value = "Admin";
+            if (step.value === "United States") step.value = "USA";
+            el.value = step.value;
+            break;
+
+          case "radio":
+            const radios = document.querySelectorAll(`input[type=radio][name=${el.name}]`);
+            const targetRadio = [...radios].find(r => 
+              r.value.toLowerCase() === step.value.toLowerCase()
+            );
+            if (targetRadio) {
+              targetRadio.checked = true;
+              targetRadio.classList.add("highlight");
+            }
+            return;
+
+          case "check":
+            el.checked = true;
+            el.classList.add("highlight");
+            break;
+
+          case "click":
+            el.click();
+            break;
+
           case "assert":
             if (step.assert?.type === "textContains") {
               console.log("Assertion:", el.textContent.includes(step.assert.value) ? "PASS" : "FAIL");
             }
             break;
-          case "navigate": console.log("Navigate to", step.target_text); break;
+
+          case "navigate":
+            console.log("Navigate to", step.target_text);
+            break;
+        }
+
+        // highlight for all except radio (already handled)
+        if (step.action !== "radio" && step.action !== "check") {
+          el.classList.add("highlight");
         }
       }
     }
